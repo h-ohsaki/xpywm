@@ -27,7 +27,6 @@ import sys
 import time
 
 from Xlib import X, display, XK
-import perlcompat
 
 FRAME_WIDTH = 2
 FRAME_COLOR = 'aquamarine1'
@@ -945,7 +944,6 @@ class WindowManager():
                     handler(event)
 
 def main():
-    perlcompat.require('3.6')
     wm = WindowManager()
     wm.catch_events()
     wm.grab_keys()
