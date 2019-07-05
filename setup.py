@@ -13,7 +13,7 @@ setuptools.setup(
     name='xpywm',
     version='1.0',
     author='Hiroyuki Ohsaki',
-    author_email='ohsaki[atmark]lsnl.jp',
+    author_email='ohsaki@lsnl.jp',
     description='A simple but extensible X11 window manager written in Python',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -24,6 +24,6 @@ setuptools.setup(
     classifiers=[
         'Programming Language :: Python :: 3.7',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-        'Operating System :: UNIX',
+        'Operating System :: POSIX',
     ],
 )
