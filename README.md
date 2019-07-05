@@ -1,5 +1,3 @@
-# xpywm
-
 # NAME
 
 xpywm - A simple but extensible X11 window manager written in Python.
