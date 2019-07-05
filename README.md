@@ -14,38 +14,38 @@ xpywm
 
 # DESCRIPTION
 
-This manual page documents *xpywm*, a simple but extensible X11 window manager
-written in Python.  *xpywm* is a Python version of *pwm*
+This manual page documents **xpywm**, a simple but extensible X11 window manager
+written in Python.  **xpywm** is a Python version of **pwm**
 (http://www.lsnl.jp/~ohsaki/software/pwm/), an X11 window manager written in
 Perl.
 
-Development of *pwm* was motivated by perlwm (http://perlwm.sourceforge.net/),
+Development of **pwm** was motivated by perlwm (http://perlwm.sourceforge.net/),
 which is a window manager written entirely in Perl.  The idea of implementing
 X11 window manager in a light-weight language is great since it allows you to
 fully customize the behavior of the window manager with a little programming.
-Similarly to perlwm, *pwm* is built based on X11::Protocol module developed by
+Similarly to perlwm, **pwm** is built based on X11::Protocol module developed by
 Stephen McCamant.
 
-*xpywm* is ported from *pwm*.  *xpywm* uses python3-xlib module for
+**xpywm** is ported from **pwm**.  **xpywm** uses python3-xlib module for
 communication with the X11 display server.
 
-The notable features of *xpywm* are its simplicity, compactness, and
+The notable features of **xpywm** are its simplicity, compactness, and
 programmable cascaded/tiled window placement algorithms.
 
-*xpywm* is simple in a sense that it is entirely written in Python, and it
-requires only python3-xlib module from PyPI.  *xpywm* is written with less
+**xpywm** is simple in a sense that it is entirely written in Python, and it
+requires only python3-xlib module from PyPI.  **xpywm** is written with less
 than 1,000 lines of code.  If you are familiar with X11 protocol and basics of
 Python programming, you can easily read and understand the source code of
-*xpywm*.
+**xpywm**.
 
-*xpywm* is compact since it provides minimal window decorations.  *xpywm* has
-no pop-up menus, graphical icons, and window animations.  *xpywm* is designed
+**xpywm** is compact since it provides minimal window decorations.  **xpywm** has
+no pop-up menus, graphical icons, and window animations.  **xpywm** is designed
 to consume the minimum amount of screen space for letting users and
-applications to use as wide screen space as possible.  For instance, *xpywm*
-draws the window title __inside__ the window, rather than outside the window,
+applications to use as wide screen space as possible.  For instance, **xpywm**
+draws the window title _inside_ the window, rather than outside the window,
 which saves dozen-pixel lines around the window.
 
-*xpywm* supports two types of window placement algorithms: programmed mode and
+**xpywm** supports two types of window placement algorithms: programmed mode and
 tiled mode.
 
 In the programmed mode, you can specify rules for inferring appropriate window
@@ -60,7 +60,7 @@ shrunk to 1/4 of the screen, and placed in a non-overlapping way.
 In the titled mode, all windows are placed in a titled fashion so that any
 window will have the same window width and height, and that any window will
 not overlap with others, as like tile-based window managers.  Moreover,
-*xpywm* tries to allocate larger area for Emacs; i.e., if there are three
+**xpywm** tries to allocate larger area for Emacs; i.e., if there are three
 windows, say, Emacs and two terminals, Emacs will occupy the half of the
 screen, and each terminal will have the quarter of the screen.
 
@@ -112,8 +112,8 @@ $ xset fp rehash
 2. Change the window manager
 
 In X window system, multiple window managers cannot be run simultaneously.
-So, to use *xpywm*, you have to disable or kill the currently-running window
-manager before starting *xpywm*.  The process of invoking a window manager as
+So, to use **xpywm**, you have to disable or kill the currently-running window
+manager before starting **xpywm**.  The process of invoking a window manager as
 well as other applications is operating system dependent.  A window manager
 can be invoked in several ways --- from per-user scripts (i.e., `~/.xinitrc`
 and `~/.xsessionrc`), system-wide scripts (e.g., `/etc/X11/xinit/xinitrc` and
@@ -150,7 +150,7 @@ manager if your system is runing System-V init instead of systemd.
 # CUSTOMIZATION
 
 Since Python is one of interpreters, you can easily customize the behavior of
-*xpywm* by directly modifying its code.  For instance, if you want to change
+**xpywm** by directly modifying its code.  For instance, if you want to change
 the appearance of window frames, edit the constants section.  If you want to
 change the keyboard binding, edit the hash variable KEYBOARD_HANDLER.  The key
 of the dictionary is the name of an X11 keysym string.  The value of the
@@ -242,7 +242,7 @@ callback is the reference to the callback function.
 
 # AVAILABILITY
 
-The latest version of *xpywm* is available at https://github.com/h-ohsaki/xpywm.git .
+The latest version of **xpywm** is available at https://github.com/h-ohsaki/xpywm.git .
 
 # SEE ALSO
 
