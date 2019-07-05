@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+#
+# A simple status monitor on X11.
+# Copyright (c) 2018-2019, Hiroyuki Ohsaki.
+# All rights reserved.
+#
+# $Id: xpymon,v 1.36 2019/07/03 13:42:29 ohsaki Exp $
+#
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+import io
+import os.path
+import re
+import subprocess
+import sys
+import time
+
+from Xlib import X, display
+from perl import die, warn, getopts, require
+import tbdump
+import xutil
+
+# definition of text colors; each pair is the remaining battery
+# percentage and the color name
+COLOR_AT = {
+    100: 'aquamarine1',
+    75: 'aquamarine2',
+    50: 'aquamarine3',
+    25: 'orange',
+}
+
+def usage():
+    die(f"""\
+usage: {sys.argv[0]} [-T] [file...]
+  -T    test mode
+""")
+
+def second_to_hour_minute(second):
+    """Convert SECONDS to hours and minutes."""
+    hour = int(second / 3600)
+    minute = int(second / 60) % 60
+    if hour > 99:
+        hour, minute = 99, 99
+    return hour, minute
+
+def convert_to_si_unit(val):
+    """Represent a numeric value VALUE in SI (System International) unit.
+    Return a tuple of the base number and the unit string."""
+    base = val
+    for unit in [' ', 'K', 'M', 'G', 'T', 'P']:
+        if base <= 100:
+            return base, unit
+        base /= 1000
+
+def extract_from_stream(stream, column=0, regexp=None, atype=str):
+    """Read lines from STREAM and return the COLUMN-th field as ATYPE
+    object (string by default).  If COLUMN is not specified, return the
+    first field.  If REGEXP is specified, only lines matching REGEXP are
+    considered."""
+    for line in stream:
+        line = line.rstrip()
+        if regexp is not None and not re.search(regexp, line):
+            continue
+        fields = line.split()
+        return atype(fields[column])
+    return None
+
+def extract_field_from_file(file, column=0, regexp=None, atype=str):
+    try:
+        f = open(file)
+    except FileNotFoundError:
+        return None
+    return extract_from_stream(f, column=column, regexp=regexp, atype=atype)
+
+def extract_field_from_cmd(args, column=0, regexp=None, atype=str):
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    f = io.TextIOWrapper(proc.stdout)
+    return extract_from_stream(f, column=column, regexp=regexp, atype=atype)
+
+def parse_stream(stream, patterns=None, ignore=None):
+    matches = [None] * len(patterns)
+    for line in stream:
+        line = line.rstrip()
+        if ignore is not None and re.search(ignore, line):
+            continue
+        for i, pattern in enumerate(patterns):
+            if matches[i]:
+                continue
+            regexp, n, atype = pattern
+            m = re.search(regexp, line)
+            if m:
+                matches[i] = atype(m.group(n))
+    return matches
+
+def parse_file(file, patterns=None, ignore=None):
+    f = open(file)
+    return parse_stream(f, patterns=patterns, ignore=ignore)
+
+def parse_cmd_output(args, patterns=None, ignore=None):
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    f = io.TextIOWrapper(proc.stdout)
+    return parse_stream(f, patterns=patterns, ignore=ignore)
+
+# ----------------------------------------------------------------
+class Monitor():
+    def __init__(self):
+        self.last_time = time.time()
+        self.last_iface = None
+        self.tx_bytes = 0
+        self.rx_bytes = 0
+        self.tx_rate = None
+        self.rx_rate = None
+
+    def color(self, ac_online=True, remain_ratio=1.):
+        """Return color name according to the AC power availablility AC_ONLINE
+        and the remaining battery capacity REMAIN_RATIO."""
+        color, is_blink = COLOR_AT[100], False
+        if not ac_online:
+            for percentage in COLOR_AT:
+                if remain_ratio <= percentage / 100:
+                    color = COLOR_AT[percentage]
+            if remain_ratio <= .03:
+                is_blink = True
+        return color, is_blink
+
+    def detect_iface(self):
+        """Look for all available network interface excluding loopback device,
+        and identify the first non-local network interface and its associated
+        IP address."""
+        patterns = [[r'^\d+: *(\w+)', 1, str], [r'inet ([0-9.]+)', 1, str]]
+        iface, addr = parse_cmd_output(['/bin/ip', '-oneline', 'addr'],
+                                       patterns,
+                                       ignore=r'127.0.0.1')
+        # reset statistics when interface is changed
+        if iface and iface != self.last_iface:
+            self.last_iface = iface
+            self.tx_bytes = self.rx_bytes = 0
+            self.tx_rates = self.rx_rates = None
+        return iface, addr
+
+    def wifi_status(self, iface):
+        """Check the current WiFI setting of the interface IFACE using
+        iwconfig command.  Return ESSID, MAC address of the access point,
+        bitrate, link quality, signal
+        leveli, and flag indicating whether wpa_supplicant is running."""
+        patterns = [[r'ESSID:"(.+?)"', 1, str],
+                    [r'Access Point: ([\dA-Fa-f:]+)', 1, str],
+                    [r'Bit Rate=([\d.]+)', 1, float],
+                    [r'Link Quality=(\S+)', 1, str],
+                    [r'Signal level=(\S+)', 1, float]]
+        matches = parse_cmd_output(['/sbin/iwconfig', iface], patterns)
+
+        # check if WiFi supplicant is running
+        code, output = subprocess.getstatusoutput('pidof wpa_supplicant')
+        supplicant = (code == 0)
+        return matches + [supplicant]
+
+    def net_status(self, iface):
+        """Return the current TX and RX speeds going through the network
+        interface IFACE."""
+
+        def exponential_moving_average(currnet, last, alpha=.95):
+            if last is None:
+                return 0
+            else:
+                return (1 - alpha) * currnet + alpha * last
+
+        patterns = [[r'TX.+bytes (\d+)', 1, int], [r'RX.+bytes (\d+)', 1, int]]
+        tx_bytes, rx_bytes = parse_cmd_output(['/sbin/ifconfig', iface],
+                                              patterns)
+        elapsed = time.time() - self.last_time
+        self.tx_rate = exponential_moving_average(
+            (tx_bytes - self.tx_bytes) * 8 / elapsed, self.tx_rate)
+        self.tx_bytes = tx_bytes
+        self.rx_rate = exponential_moving_average(
+            (rx_bytes - self.rx_bytes) * 8 / elapsed, self.rx_rate)
+        self.rx_bytes = rx_bytes
+        self.last_time = time.time()
+        return self.tx_rate, self.rx_rate
+
+    def battery_status(self):
+        """Return the existence of AC power supply and the battery status
+        (capacity and the expected remaining running time)."""
+        try:
+            ac_online = extract_field_from_file(
+                '/sys/class/power_supply/AC/online', atype=int)
+        except FileNotFoundError:
+            # assume AC power if battery status is not available
+            ac_online = True
+
+        v = {'energy_full': 0, 'energy_now': 0, 'power_now': 0}
+        for battery in ['BAT0']:
+            dir_ = '/sys/class/power_supply/' + battery
+            for key in v.keys():
+                n = extract_field_from_file(f'{dir_}/{key}', atype=int)
+                if n:
+                    v[key] += n
+        remain_ratio = v['energy_now'] / max(v['energy_full'], 1e-10)
+        remain_seconds = v['energy_now'] * 3600 / max(v['power_now'], 1e-10)
+        return ac_online, remain_ratio, remain_seconds, v['power_now'] / 1000000
+
+    def cpu_status(self):
+        """Return the current load average and the CPU frequency of the first
+        processor."""
+        loadavg = extract_field_from_file('/proc/loadavg', atype=float)
+        cpufreq = extract_field_from_file('/proc/cpuinfo',
+                                          column=3,
+                                          regexp=r'MHz',
+                                          atype=float)
+        return loadavg, cpufreq
+
+    def video_status(self):
+        """Return the primary video output device, the width and the height of
+        the display, and the status whether video recording is in
+        operation."""
+        patterns = [[r'^(\w+) connected \w* *(\d+)x(\d+)', 1, str],
+                    [r'^(\w+) connected \w* (\d+)x(\d+)', 2, int],
+                    [r'^(\w+) connected \w* (\d+)x(\d+)', 3, int]]
+        screen, xsize, ysize = parse_cmd_output(['xrandr', '--current'],
+                                                patterns)
+        # check if desktop recording is active
+        code, output = subprocess.getstatusoutput('pidof ffmpeg')
+        recording = (code == 0)
+        return screen, xsize, ysize, recording
+
+    def time_string(self):
+        """Return two strings representing the local time and the time in
+        another time zone."""
+        clock = time.strftime('%Y/%m/%d(%a) %H:%M:%S')
+        patterns = [['(\d\d:\d\d:\d\d)', 1, str]]
+        # FIXME: avoid hard-coding
+        matches = parse_cmd_output(
+            ['zdump', '/usr/share/zoneinfo/Europe/Brussels'], patterns)
+        return clock, matches[0]
+
+    def compose_wifi_status(self, iface, addr):
+        essid, ap, rate, quality, level, supplicant = self.wifi_status(iface)
+        if not essid:
+            essid = '--------'
+        if not ap:
+            ap = '--:--:--:--:--'
+        if not rate:
+            rate = 0
+        if not quality:
+            quality = '--/--'
+        if not level:
+            level = 0
+        supp_mark = '*' if supplicant else ' '
+        return f'{iface:5}{supp_mark} {essid:8} {ap} {rate:4.1f}M {quality:5} {level:5.1f}dBm'
+
+    def compose_net_status(self, iface, addr):
+        tx_rate, rx_rate = self.net_status(iface)
+        tx_base, tx_unit = convert_to_si_unit(tx_rate)
+        rx_base, rx_unit = convert_to_si_unit(rx_rate)
+        return f'{iface:5} {addr:15} TX{tx_base:5.2f}{tx_unit} RX{rx_base:5.2f}{rx_unit}'
+
+    def compose_power_status(self):
+        ac_online, remain_ratio, remain_secs, consumption = self.battery_status(
+        )
+        ac_mark = '*' if ac_online else ' '
+        ratio = int(remain_ratio * 100)
+        hh, mm = second_to_hour_minute(remain_secs)
+        return f'PW{ac_mark}{ratio:3d}% {hh:02d}:{mm:02d} {consumption:5.2f}W'
+
+    def compose_cpu_status(self):
+        loadavg, cpufreq = self.cpu_status()
+        load = int(loadavg * 100)
+        freq = cpufreq / 1000
+        return f'CPU{load:3d}% {freq:3.1f}GHz'
+
+    def compose_video_status(self):
+        dev, width, height, recording = self.video_status()
+        if dev is None:
+            dev = '???'
+        if width is None:
+            width = 0
+        if height is None:
+            height = 0
+        rec_mark = '*' if recording else ' '
+        return f'{dev}{rec_mark} {width}x{height}'
+
+    def compose_clock_string(self):
+        clock, second_clock = self.time_string()
+        return f'[{second_clock}] {clock}'
+
+    def status_string(self, cols=80):
+        """Return a summary string describing wifi, network, power, CPU, and
+        video status with the wall clock."""
+        stats = []
+        iface, addr = self.detect_iface()
+        if iface:
+            stats.append(self.compose_wifi_status(iface, addr))
+            stats.append(self.compose_net_status(iface, addr))
+        stats.append(self.compose_power_status())
+        stats.append(self.compose_cpu_status())
+        stats.append(self.compose_video_status())
+        stats.append(self.compose_clock_string())
+        return ' | '.join(stats)
+
+    def should_hide(self):
+        """Return True if the status monitor should not be displayed because,
+        for instance, a full-screen application is running."""
+        code, output = subprocess.getstatusoutput('pidof mpv')
+        return code == 0
+
+def main_loop(disp, screen, window, width, gcs, monitor):
+    last_status_str = None
+    while True:
+        time.sleep(1)
+        if monitor.should_hide():
+            continue
+        status_str = monitor.status_string(width / xutil.FONT_WIDTH)
+        if status_str == last_status_str:
+            continue
+        col = int((width / xutil.FONT_WIDTH - len(status_str)) / 2)
+        color, is_blink = monitor.color()
+        reverse = is_blink and int(time.time()) & 1
+        xutil.clear(window)
+        xutil.draw_str(disp,
+                       screen,
+                       window,
+                       gcs,
+                       status_str,
+                       col,
+                       0,
+                       color=color,
+                       reverse=reverse)
+        xutil.flush(disp, screen)
+        window.configure(stack_mode=X.Above)
+        last_status_str = status_str
+
+def main():
+    require('3.6')
+    opt = getopts('T') or usage()
+    if opt.T:  # test mode
+        mon = Monitor()
+        print('color', mon.color())
+        iface, addr = mon.detect_iface()
+        print('iface', iface, addr)
+        if iface:
+            print(mon.wifi_status('wlan0'))
+            print(mon.net_status('wlan0'))
+        print(mon.battery_status())
+        print(mon.cpu_status())
+        print(mon.video_status())
+        print(mon.time_string())
+        print(mon.status_string(80))
+        exit()
+
+    disp = display.Display()
+    font = xutil.load_font(disp)
+    screen = disp.screen()
+    width, height = screen.width_in_pixels, xutil.FONT_HEIGHT
+    window = xutil.create_window(disp,
+                                 screen,
+                                 width=width,
+                                 height=height,
+                                 x=0,
+                                 y=0)
+    gcs = xutil.create_gcs(disp, screen, window, font)
+    monitor = Monitor()
+    main_loop(disp, screen, window, width, gcs, monitor)
+
+if __name__ == "__main__":
+    main()
