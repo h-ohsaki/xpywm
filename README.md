@@ -42,7 +42,7 @@ Python programming, you can easily read and understand the source code of
 no pop-up menus, graphical icons, and window animations.  *xpywm* is designed
 to consume the minimum amount of screen space for letting users and
 applications to use as wide screen space as possible.  For instance, *xpywm*
-draws the window title inside the window, rather than outside the window,
+draws the window title __inside__ the window, rather than outside the window,
 which saves dozen-pixel lines around the window.
 
 *xpywm* supports two types of window placement algorithms: programmed mode and
