@@ -28,36 +28,12 @@ import sys
 import time
 
 from Xlib import X, display, XK
-from perl import die, warn, getopts, require
-import tbdump
-
-_monitor_depth = 0
-
-def monitor(func):
-    """A decorator function to monitor function invocation and return value."""
-
-    def _monitor(*args, **kwargs):
-        global _monitor_depth
-        indent = '    ' * _monitor_depth
-        args_str = repr(args[1:]) + repr(kwargs)
-        args_str = re.sub(r"class '(.+?)'", r'\1', args_str)
-        print(f'{indent}{func.__name__}: {args_str[:80]}')
-        _monitor_depth += 1
-
-        result = func(*args, **kwargs)
-        result_str = str(result)
-        result_str = re.sub(r"class '(.+?)'", r'\1', result_str)
-        print(f' {indent}=> {result_str[:80]}')
-        _monitor_depth -= 1
-        return result
-
-    return _monitor
 
 FRAME_WIDTH = 2
 FRAME_COLOR = 'aquamarine1'
 TITLE_WIDTH = 96
 TITLE_HEIGHT = 10
-TITLE_FONT = '-hiro-fixed-medium-r-normal--8-80-75-75-c-80-iso646.1991-irv'
+TITLE_FONT = '-schumacher-clean-bold-r-normal--8-80-75-75-c-80-iso646.1991-irv'
 TITLE_COLOR = 'aquamarine3'
 Y_OFFSET = 8
 PNT_OFFSET = 16
@@ -510,7 +486,7 @@ class WindowManager():
             if side == 'title':
                 # update title bar
                 win.clear_area(0, 0, TITLE_WIDTH, TITLE_HEIGHT)
-                name = '{window.id:x}{self.get_window_class(window)}'
+                name = f'{window.id:x}{self.get_window_class(window)}'
                 xpos = max(0, (TITLE_WIDTH - len(name) * 8) // 2)
                 chars = [chr(c).encode() for c in list(name.encode())]
                 win.poly_text(self.frame_gc, xpos, 8, chars)
@@ -547,8 +523,6 @@ class WindowManager():
         window.map()
         mask = X.EnterWindowMask | X.LeaveWindowMask
         window.change_attributes(event_mask=mask)
-        # uncomment the following line to enable xcompmgr
-        #os.system('pidof xcompmgr && transset --id {window.id} .8')
 
     def unmanage_window(self, window):
         """The window WINDOW leaves from the control of the window manager."""
@@ -971,7 +945,6 @@ class WindowManager():
                     handler(event)
 
 def main():
-    require('3.6')
     wm = WindowManager()
     wm.catch_events()
     wm.grab_keys()
