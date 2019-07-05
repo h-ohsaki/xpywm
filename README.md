@@ -2,6 +2,11 @@
 
 xpywm - A simple but extensible X11 window manager written in Python.
 
+
+![screenshot](https://raw.githubusercontent.com/h-ohsaki/xpywm/master/screenshot/screenshot-1.png)
+
+![screenshot](https://raw.githubusercontent.com/h-ohsaki/xpywm/master/screenshot/screenshot-2.png)
+
 # SYNOPSIS
 
 xpywm
