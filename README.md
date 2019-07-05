@@ -71,14 +71,14 @@ None
 
 # INSTALLATION
 
-A Makefile for Debian GNU/Linux systems is available at http://www.lsnl.jp/~ohsaki/software/xpywm/Makefile .
+A Makefile for Debian GNU/Linux systems is included.
 
 An example session is as follows.
 
 ```sh
-$ wget http://www.lsnl.jp/~ohsaki/software/xpywm/Makefile
+$ git clone https://github.com/h-ohsaki/xpywm.git
+$ cd xpywm
 # make install
-$ make fetch-skelton
 $ cp skel.xinitrc ~/.xinitrc
 $ cp skel.Xdefaults ~/.Xdefaults
 $ cp skel.emacs ~/.emacs
@@ -103,11 +103,10 @@ must be updated so that X server can recognize 8x8maru font.  An
 example session is as follows.
 
 ```sh
-$ mkdir -p $HOME/lib/fonts
-$ cd $HOME/lib/fonts
-$ wget http://www.lsnl.jp/~ohsaki/software/xpywm/8x8maru.bdf
-$ xset +fp $HOME/lib/fonts
-$ mkfontdir
+$ sudo mkdir -p /usr/local/lib/fonts
+$ sudo cp 8x8maru.bdf /usr/local/lib/fonts
+$ sudo mkfontdir /usr/local/lib/fonts
+$ xset +fp /usr/local/lib/fonts
 $ xset fp rehash
 ```
 
@@ -123,7 +122,7 @@ and `~/.xsessionrc`), system-wide scripts (e.g., `/etc/X11/xinit/xinitrc` and
 pages (e.g., xinit(1), startx(1), Xsession(5), xdm(1)) for details.
 
 This section explains the (possibly) simplest way to change the window
-manager.
+manager if your system is runing System-V init instead of systemd.
 
     1. Change the runlevel from 3 to 2 to disable the display manager.
 
@@ -244,7 +243,7 @@ callback is the reference to the callback function.
 
 # AVAILABILITY
 
-The latest version of *xpywm* is available at http://www.lsnl.jp/~ohsaki/software/xpywm/xpywm .
+The latest version of *xpywm* is available at https://github.com/h-ohsaki/xpywm.git .
 
 # SEE ALSO
 
