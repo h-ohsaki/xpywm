@@ -6,12 +6,6 @@ xpywm - A simple but extensible X11 window manager written in Python.
 
 xpywm
 
-# SCREENSHOT
-
-![screenshot](http://www.lsnl.jp/~ohsaki/software/xpywm/screenshot-1.png)
-
-![screenshot](http://www.lsnl.jp/~ohsaki/software/xpywm/screenshot-2.png)
-
 # DESCRIPTION
 
 This manual page documents **xpywm**, a simple but extensible X11 window manager
@@ -70,82 +64,9 @@ None
 
 # INSTALLATION
 
-A Makefile for Debian GNU/Linux systems is included.
-
-An example session is as follows.
-
 ```sh
-$ git clone https://github.com/h-ohsaki/xpywm.git
-$ cd xpywm
-# make install
-$ cp skel.xinitrc ~/.xinitrc
-$ cp skel.Xdefaults ~/.Xdefaults
-$ cp skel.emacs ~/.emacs
-$ startx
+$ pip3 install xpywm
 ```
-
-# MANUAL INSTALLATION
-
-1. Install the 8x8maru bitmap font 
-
-8x8maru bitmap font is available at http://www.lsnl.jp/~ohsaki/software/xpywm/8x8maru.bdf .
-
-Save the bitmap font file `8x8maru.bdf` in a directory contained in
-the X11 font path.  The current font path can be checked with
-
-```sh
-$ xset q
-```
-
-Note that the font file index `fonts.dir` file in the font directory
-must be updated so that X server can recognize 8x8maru font.  An
-example session is as follows.
-
-```sh
-$ sudo mkdir -p /usr/local/lib/fonts
-$ sudo cp 8x8maru.bdf /usr/local/lib/fonts
-$ sudo mkfontdir /usr/local/lib/fonts
-$ xset +fp /usr/local/lib/fonts
-$ xset fp rehash
-```
-
-2. Change the window manager
-
-In X window system, multiple window managers cannot be run simultaneously.
-So, to use **xpywm**, you have to disable or kill the currently-running window
-manager before starting **xpywm**.  The process of invoking a window manager as
-well as other applications is operating system dependent.  A window manager
-can be invoked in several ways --- from per-user scripts (i.e., `~/.xinitrc`
-and `~/.xsessionrc`), system-wide scripts (e.g., `/etc/X11/xinit/xinitrc` and
-`/etc/X11/Xsession`), and display managers (e.g., xdm and gdm).  Check manual
-pages (e.g., xinit(1), startx(1), Xsession(5), xdm(1)) for details.
-
-This section explains the (possibly) simplest way to change the window
-manager if your system is runing System-V init instead of systemd.
-
-    1. Change the runlevel from 3 to 2 to disable the display manager.
-
-    Edit `/etc/inittab` and replace the line `id:3:initdefault:` with
-    `id:2:initdefault:`.  After the reboot, the system will not start a
-    display manager such as xdm and gdm.  Reboot the system, and login via
-    console.  Make sure X window system is not running.
-
-    2. Create the client script `~/.xinitrc`.
-
-    Create `~/.xinitrc file`.  An exmple `~/.xinitrc` file is:
-
-    ```sh
-    xset +fp $HOME/lib/fonts
-    emacs &
-    xpywm &
-    xpymon &
-    xpylog &
-    urxvt
-    ```
-
-    3. Start X server with startx.
-
-    Run xinit to start X server.
 
 # CUSTOMIZATION
 
@@ -242,11 +163,12 @@ callback is the reference to the callback function.
 
 # AVAILABILITY
 
-The latest version of **xpywm** is available at https://github.com/h-ohsaki/xpywm.git .
+The latest version of **ansiterm** module is available at PyPI
+(https://pypi.org/project/xpywm/) .
 
 # SEE ALSO
 
-twm(1), perlwm(1), xpymon(1), xpylog(1)
+twm(1), perlwm(1), pwm(1), xpymon(1), xpylog(1)
 
 # AUTHOR
 
