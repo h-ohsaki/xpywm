@@ -341,7 +341,7 @@ class WindowManager():
             return ''
 
     def window_shortname(self, window):
-        return f'0x{window.id:x} [{self.get_window_class(window)}]'
+        return '0x{:x} [{}]'.format(window.id, self.get_window_class(window))
 
     def get_screen_size(self):
         """Return the dimension (WIDTH, HEIGHT) of the current screen as a
@@ -485,7 +485,7 @@ class WindowManager():
             if side == 'title':
                 # update title bar
                 win.clear_area(0, 0, TITLE_WIDTH, TITLE_HEIGHT)
-                name = f'{window.id:x}{self.get_window_class(window)}'
+                name = '{:x}{}'.format(window.id, self.get_window_class(window))
                 xpos = max(0, (TITLE_WIDTH - len(name) * 8) // 2)
                 chars = [chr(c).encode() for c in list(name.encode())]
                 win.poly_text(self.frame_gc, xpos, 8, chars)
