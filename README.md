@@ -64,6 +64,9 @@ None
 
 # INSTALLATION
 
+**xpywm** requires Python 3.6 or later since **xpywm** uses f-string feature
+  introduced in Python 3.6.
+
 ```sh
 $ pip3 install xpywm
 ```
