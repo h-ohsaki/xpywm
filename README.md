@@ -175,7 +175,7 @@ KEYBOARD_HANDLER['F12'] = {
 
 - Shift + F7
 
-  Enable the external video output through external HDMI or DP port.
+  Enable the external video output through HDMI or DP port.
 
 - Ctrl + Mod1 + Delete
 
@@ -187,7 +187,7 @@ KEYBOARD_HANDLER['F12'] = {
 
 # AVAILABILITY
 
-The latest version of **ansiterm** module is available at PyPI
+The latest version of **xpywm** is available at PyPI
 (https://pypi.org/project/xpywm/) .
 
 # SEE ALSO
