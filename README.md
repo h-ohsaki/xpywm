@@ -75,13 +75,36 @@ $ pip3 install xpywm
 
 # CUSTOMIZATION
 
+On startup, **xpywm** loads per-user RC script (`~/.xpywmrc`) if it exists.
+The RC script is any valid Python script.  You can change the appearance and
+the behavior of **xpywm** using the RC file.
+
 Since Python is one of interpreters, you can easily customize the behavior of
-**xpywm** by directly modifying its code.  For instance, if you want to change
-the appearance of window frames, edit the constants section.  If you want to
-change the keyboard binding, edit the hash variable KEYBOARD_HANDLER.  The key
-of the dictionary is the name of an X11 keysym string.  The value of the
-dictionary is self explanatory: modifier is the mask of keyboard modifiers and
-callback is the reference to the callback function.
+**xpywm** by directly modifying its variables, functions, and methods.  For
+instance, if you want to change the appearance of window frames, override
+variables.  If you want to change the keyboard binding, modify the dictionary
+KEYBOARD_HANDLER.  The key of the dictionary is the name of an X11 keysym
+string.  The value of the dictionary is self explanatory: modifier is the mask
+of keyboard modifiers and callback is the reference to the callback function.
+
+An example `~/.xpywmrc` file is as follows.
+
+```python
+# specify the title font
+global TITLE_FONT
+TITLE_FONT = '-hiro-fixed-medium-r-normal--8-80-75-75-c-80-iso646.1991-irv'
+
+# add key binding: Alt + Ctrl + 6 to access your server
+KEYBOARD_HANDLER['6'] = {
+    'modifier': X.Mod1Mask | X.ControlMask, 'command': 'ssh -f your_server urxvt &'
+}
+
+# add key binding: Alt + Ctrl + F12 to execute your shell script
+KEYBOARD_HANDLER['F12'] = {
+    'modifier': X.ShiftMask, 'command': '/path/to/your/script.sh'
+}
+
+```
 
 # BINDINGS
 
@@ -146,17 +169,13 @@ callback is the reference to the callback function.
 
   Run a command "pidof firefox || firefox &" via os.system() function.
 
-- Ctrl + Mod1 + 6 -- Ctrl + Mod1 + 9, Ctrl + Mod1 + 0
-
-  Run a ssh command with different arguments.  Edit according to your environment.
-
 - Mod1 + F1 -- Mod1 + F4
 
   Switch to the virtual screen 1--4, respectively.
 
-- Shift + F5 -- Shift + F12
+- Shift + F7
 
-  Run a shell command.  Edit according to your environment.
+  Enable the external video output through external HDMI or DP port.
 
 - Ctrl + Mod1 + Delete
 
