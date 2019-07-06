@@ -428,7 +428,6 @@ class WindowManager():
         window.map()
         self.frame_windows['title'] = window
         # create GC for title window
-        print(TITLE_FONT)
         font = self.display.open_font(TITLE_FONT)
         self.frame_gc = window.create_gc(font=font,
                                          foreground=self.screen.black_pixel)
