@@ -97,40 +97,12 @@ KEYBOARD_HANDLER = {
         'modifier': X.Mod1Mask | X.ControlMask, 'command':
         'pidof firefox || firefox &'
     },
-    '6': {
-        'modifier': X.Mod1Mask | X.ControlMask, 'command':
-        'ssh -f raccoon urxvt &'
-    },
-    '7': {
-        'modifier': X.Mod1Mask | X.ControlMask, 'command':
-        'ssh -f fox-ssh urxvt &'
-    },
-    '8': {
-        'modifier': X.Mod1Mask | X.ControlMask, 'command': 'ssh -f fox urxvt &'
-    },
-    '9': {
-        'modifier': X.Mod1Mask | X.ControlMask, 'command':
-        'ssh -f wombat urxvt &'
-    },
-    '0': {
-        'modifier': X.Mod1Mask | X.ControlMask, 'command':
-        'ssh -f lesser urxvt &'
-    },
     'F1': {'modifier': X.Mod1Mask, 'method': 'select_vscreen', 'args': 0},
     'F2': {'modifier': X.Mod1Mask, 'method': 'select_vscreen', 'args': 1},
     'F3': {'modifier': X.Mod1Mask, 'method': 'select_vscreen', 'args': 2},
     'F4': {'modifier': X.Mod1Mask, 'method': 'select_vscreen', 'args': 3},
-    'F5': {
-        'modifier': X.ShiftMask, 'command':
-        '(sudo config-wireless stop; sudo config-wireless start) &'
-    },
     'F7': {
         'modifier': X.ShiftMask, 'function': 'xrandr_enable_external_output'
-    },
-    'F8': {'modifier': X.ShiftMask, 'command': 'xcalib -i -alter'},
-    'F11': {'modifier': X.ShiftMask, 'command': 'start-or-stop play-music'},
-    'F12': {
-        'modifier': X.ShiftMask, 'command': 'start-or-stop record-desktop'
     },
     'XF86AudioRaiseVolume': {
         'modifier': X.NONE, 'function': 'audio_raise_volume'
@@ -252,6 +224,7 @@ def set_mixer_level(level):
     subprocess.getoutput('amixer set Master {output}%')
 
 def audio_raise_volume(delta=10):
+    """Increase the volume of the default mixer by DELTA."""
     debug('audio_raise_volume: %s', delta)
     level = get_mixer_level()
     if level is not None:
@@ -259,8 +232,26 @@ def audio_raise_volume(delta=10):
         set_mixer_level(level)
 
 def audio_lower_volume(delta=10):
+    """Decrease the volume of the default mixer by DELTA."""
     debug('audio_lower_volume: %s', delta)
     audio_raise_volume(-delta)
+
+def load_rcfile():
+    """Load and execute the custom RC script in the home directory
+    (~/.xpywmrc) if it exists.  The RC script is any (valid) Python script,
+    which is loaded after defining all global vaiables.  So, you can freely
+    overrwite those definitions."""
+    rc_file = '{}/.xpywmrc'.format(os.getenv('HOME'))
+    try:
+        with open(rc_file) as f:
+            code = f.read()
+    except FileNotFoundError:
+        return None
+    try:
+        exec(code)
+    except:
+        error("executing '%s' failed.  aborting...", rc_file)
+        exit()
 
 class WindowManager():
     def __init__(self):
@@ -437,6 +428,7 @@ class WindowManager():
         window.map()
         self.frame_windows['title'] = window
         # create GC for title window
+        print(TITLE_FONT)
         font = self.display.open_font(TITLE_FONT)
         self.frame_gc = window.create_gc(font=font,
                                          foreground=self.screen.black_pixel)
@@ -485,7 +477,8 @@ class WindowManager():
             if side == 'title':
                 # update title bar
                 win.clear_area(0, 0, TITLE_WIDTH, TITLE_HEIGHT)
-                name = '{:x}{}'.format(window.id, self.get_window_class(window))
+                name = '{:x}{}'.format(window.id,
+                                       self.get_window_class(window))
                 xpos = max(0, (TITLE_WIDTH - len(name) * 8) // 2)
                 chars = [chr(c).encode() for c in list(name.encode())]
                 win.poly_text(self.frame_gc, xpos, 8, chars)
@@ -944,6 +937,7 @@ class WindowManager():
                     handler(event)
 
 def main():
+    load_rcfile()
     wm = WindowManager()
     wm.catch_events()
     wm.grab_keys()
