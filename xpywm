@@ -583,7 +583,7 @@ class WindowManager():
                 return
         next_window.raise_window()
         geom = next_window.get_geometry()
-        next_window.warp_pointer(geom.width // 2, geom.height // 2)
+        next_window.warp_pointer(PNT_OFFSET, PNT_OFFSET)
         self.focus_window(next_window)
 
     def is_maximized(self, window):
