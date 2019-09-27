@@ -221,7 +221,7 @@ def set_mixer_level(level):
     """Configure the master playback volume of the default ALSA audio device.
     Volume must be specified between 0 and 100."""
     debug('set_mixer_level: %d', level)
-    subprocess.getoutput('amixer set Master {output}%')
+    subprocess.getoutput('amixer set Master {}%'.format(level))
 
 def audio_raise_volume(delta=10):
     """Increase the volume of the default mixer by DELTA."""
