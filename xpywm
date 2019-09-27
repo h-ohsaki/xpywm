@@ -201,8 +201,8 @@ def xrandr_enable_external_output():
     if m:
         output = m.group(1)
         # NOTE: some LCD projectors fails to recognize without turning off
-        os.system('xrandr --output {output} --off')
-        os.system('xrandr --output {output} --mode 800x600 --rate 56.25')
+        os.system('xrandr --output {} --off'.format(output))
+        os.system('xrandr --output {} --mode 800x600 --rate 56.25'.format(output))
         return
 
 def get_mixer_level():
