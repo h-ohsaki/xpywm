@@ -202,7 +202,8 @@ def xrandr_enable_external_output():
         output = m.group(1)
         # NOTE: some LCD projectors fails to recognize without turning off
         os.system('xrandr --output {} --off'.format(output))
-        os.system('xrandr --output {} --mode 800x600 --rate 56.25'.format(output))
+        os.system(
+            'xrandr --output {} --mode 800x600'.format(output))
         return
 
 def get_mixer_level():
@@ -510,6 +511,12 @@ class WindowManager():
         self.managed_windows.append(window)
         self.exposed_windows.append(window)
         self.window_vscreen[window] = self.current_vscreen
+
+        # automatically layout the window if rule is found
+        geom_dict = self.find_geometry_by_rules(window)
+        if geom_dict is not None:
+            window.configure(**geom_dict)
+
         window.map()
         mask = X.EnterWindowMask | X.LeaveWindowMask
         window.change_attributes(event_mask=mask)
@@ -566,7 +573,6 @@ class WindowManager():
         """Change the active window from the window WINDOW to the next one.
         The active window is raised and focused.  The pointer is moved to the
         north-west of the window."""
-
         def _sort_key(window):
             geom = window.get_geometry()
             return geom.x * 10000 + geom.y
@@ -629,6 +635,23 @@ class WindowManager():
         cls = self.get_window_class(window)
         return 'xterm' in cls.lower()
 
+    def find_geometry_by_rules(self, window):
+        """Look through the configuration variable LAYOUT_RULES and identify
+        the desired geometry (x, y, width, and height) of WINDOW.  The geometry is returned as
+        a dictionary.  Return None if no rule is found."""
+        debug('find_geometry_by_rules: %s', self.window_shortname(window))
+        cls = self.get_window_class(window)
+        cur_geom = window.get_geometry()
+        screen_width, screen_height = self.get_usable_screen_size()
+        for regexp, geom in LAYOUT_RULES.items():
+            if re.search(regexp, cls, flags=re.IGNORECASE):
+                debug("  rule found -> '%s': %s", regexp, geom)
+                # toggle the location of office applications
+                if 'office' in regexp and cur_geom.x > screen_width / 4:
+                    geom = [0, 0, .5 + LAYOUT_OFFSET, 1]
+                return self.convert_geomtry(*geom)
+        return None
+
     def layout_window(self, window, quarter=None):
         """Resize and move the window WINDOW based on predefined rules.  If
         QUARTER is specified, the window is placed so that the exact quarter
@@ -636,22 +659,15 @@ class WindowManager():
         based on rules specifed by the variable
         `LAYOUT_RULES'."""
         debug('layout_window: %s q=%s', self.window_shortname(window), quarter)
-        screen_width, screen_height = self.get_usable_screen_size()
-        cur_geom = window.get_geometry()
         if quarter is not None:
             geom = QUARTER_GEOMETRIES[quarter % 4]
             window.configure(**self.convert_geomtry(*geom))
             return True
         else:
-            cls = self.get_window_class(window)
-            for regexp, geom in LAYOUT_RULES.items():
-                if re.search(regexp, cls, flags=re.IGNORECASE):
-                    debug("  rule found -> '%s': %s", regexp, geom)
-                    # toggle the location of office applications
-                    if 'office' in regexp and cur_geom.x > screen_width / 4:
-                        geom = [0, 0, .5 + LAYOUT_OFFSET, 1]
-                    window.configure(**self.convert_geomtry(*geom))
-                    return True
+            geom_dict = self.find_geometry_by_rules(window)
+            if geom_dict is not None:
+                window.configure(**geom_dict)
+                return True
         return False
 
     # FIXME: should make sure focus is not lost
@@ -681,7 +697,6 @@ class WindowManager():
         debug('tile_all_windows')
         """Resize and move all windows on the current virtual screen so that
         all windows have the equal size."""
-
         def _sort_key(window):
             # force Emacs be the last in the window list
             if 'emacs' in self.get_window_class(window).lower():
