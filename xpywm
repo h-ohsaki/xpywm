@@ -128,8 +128,6 @@ LAYOUT_RULES = {
     [.5 - LAYOUT_OFFSET, 0, .5 + LAYOUT_OFFSET, 1],
     r'pdf|dvi|office|acroread|tgif|mathematica|libre':
     [.5 - LAYOUT_OFFSET, 0, .5 + LAYOUT_OFFSET, 1],
-    r'xvroot': [.5 - LAYOUT_OFFSET, 0, .5 + LAYOUT_OFFSET, .5],
-    r'xvschnauze': [.5 - LAYOUT_OFFSET, .5, .5 + LAYOUT_OFFSET, .5],
 }
 
 # [x, y, width, height] of south-east, north-east, south-west, north-west windows
