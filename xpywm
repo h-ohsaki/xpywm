@@ -200,8 +200,7 @@ def xrandr_enable_external_output():
         output = m.group(1)
         # NOTE: some LCD projectors fails to recognize without turning off
         os.system('xrandr --output {} --off'.format(output))
-        os.system(
-            'xrandr --output {} --mode 800x600'.format(output))
+        os.system('xrandr --output {} --mode 800x600'.format(output))
         return
 
 def get_mixer_level():
@@ -330,6 +329,22 @@ class WindowManager():
         else:
             return ''
 
+    def get_window_geometry(self, window):
+        """Obtain the geometry and attributes of the window WINDOW.  Return as
+        a Xlib.protocol.rq.Struct object.  Valid attributes are x, y, width,
+        height, root, depth, border_width, and sequence_number.  Return None
+        if the geometry is not retrieved."""
+        try:
+            return window.get_geometry()
+        except:
+            return None
+
+    def get_window_attribute(self, window):
+        try:
+            return window.get_attributes()
+        except:
+            return None
+
     def window_shortname(self, window):
         return '0x{:x} [{}]'.format(window.id, self.get_window_class(window))
 
@@ -440,7 +455,9 @@ class WindowManager():
             self._draw_frame_windows(window)
 
     def _draw_frame_windows(self, window):
-        geom = window.get_geometry()
+        geom = self.get_window_geometry(window)
+        if geom is None:
+            return
         for side in ['frame_l', 'frame_r', 'frame_u', 'frame_d', 'title']:
             x, y, width, height = 0, 0, 0, 0
             if side == 'frame_l':
@@ -493,10 +510,8 @@ class WindowManager():
         """The window WINDOW is put under the control of the window manager.
         The window is forced to be mapped on the current virtual screen.  The
         geometry of the window is unchnaged."""
-        # skip if the window seems invalid
-        try:
-            attrs = window.get_attributes()
-        except:
+        attrs = self.get_window_attribute(window)
+        if attrs is None:
             return
         # skip if the window should not be intercepted by window manager
         if attrs.override_redirect:
@@ -572,8 +587,11 @@ class WindowManager():
         The active window is raised and focused.  The pointer is moved to the
         north-west of the window."""
         def _sort_key(window):
-            geom = window.get_geometry()
-            return geom.x * 10000 + geom.y
+            geom = self.get_window_geometry(window)
+            if geom is None:
+                return 100000000
+            else:
+                return geom.x * 10000 + geom.y
 
         # sort active windows with their geometries
         windows = sorted(self.exposed_windows, key=_sort_key)
@@ -586,13 +604,14 @@ class WindowManager():
             else:
                 return
         next_window.raise_window()
-        geom = next_window.get_geometry()
         next_window.warp_pointer(PNT_OFFSET, PNT_OFFSET)
         self.focus_window(next_window)
 
     def is_maximized(self, window):
         """Check if the window WINDOW seems to have been maximized."""
-        geom = window.get_geometry()
+        geom = self.get_window_geometry(window)
+        if geom is None:
+            return False
         width, height = self.get_usable_screen_size()
         if geom.x == 0 and geom.width == width:
             return True
@@ -602,7 +621,9 @@ class WindowManager():
 
     def save_window_geometry(self, window):
         """Save the current geometry of the window WINDOW."""
-        geom = window.get_geometry()
+        geom = self.get_window_geometry(window)
+        if geom is None:
+            return
         self.geometries[window] = {
             'x': geom.x, 'y': geom.y, 'width': geom.width, 'height':
             geom.height
@@ -617,7 +638,9 @@ class WindowManager():
         """Resize the geometry of the window WINDOW to cover the screen
         horizontally and/or vertically."""
         screen_width, screen_height = self.get_usable_screen_size()
-        geom = window.get_geometry()
+        geom = self.get_window_geometry(window)
+        if geom is None:
+            return
         x, y = geom.x, geom.y
         width, height = geom.width, geom.height
         if horizontally:
@@ -639,7 +662,9 @@ class WindowManager():
         a dictionary.  Return None if no rule is found."""
         debug('find_geometry_by_rules: %s', self.window_shortname(window))
         cls = self.get_window_class(window)
-        cur_geom = window.get_geometry()
+        cur_geom = self.get_window_geometry(window)
+        if cur_geom is None:
+            return None
         screen_width, screen_height = self.get_usable_screen_size()
         for regexp, geom in LAYOUT_RULES.items():
             if re.search(regexp, cls, flags=re.IGNORECASE):
@@ -764,6 +789,12 @@ class WindowManager():
 
     def cb_maximize_window(self, event, horizontally=True):
         window = event.child
+        attrs = self.get_window_attribute(window)
+        if attrs is None:
+            return
+        # ignore if the window should not be intercepted by window manager
+        if attrs.override_redirect:
+            return
         if self.is_maximized(window) and self.load_window_geometry(window):
             window.configure(**self.load_window_geometry(window))
             self.draw_frame_windows(window)
@@ -838,7 +869,8 @@ class WindowManager():
             X.GrabModeAsync, X.NONE, X.NONE, 0)
         self.drag_window = window
         self.drag_button = event.detail
-        self.drag_geometry = window.get_geometry()
+        # FIXME: drag_geometry might be None
+        self.drag_geometry = self.get_window_geometry(window)
         self.drag_start_xy = event.root_x, event.root_y
 
     def handle_button_release(self, event):
