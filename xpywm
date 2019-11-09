@@ -76,7 +76,7 @@ KEYBOARD_HANDLER = {
     'z': {
         'modifier': X.Mod1Mask | X.ControlMask, 'method': 'cb_destroy_window'
     },
-    'x': {
+    'y': {
         'modifier': X.Mod1Mask | X.ControlMask, 'method': 'cb_toggle_vscreen'
     },
     'bracketleft': {
