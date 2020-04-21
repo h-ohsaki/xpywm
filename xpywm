@@ -359,8 +359,11 @@ class WindowManager():
         m = re.search(r'(DP-?\d|HDMI-?\d) connected (\d+)x(\d+)', output)
         if m:
             width, height = int(m.group(2)), int(m.group(3))
-        # limit the screen size if sendscreen is running
+        # limit the screen size if sendscreen/record-desktop is running
         code, output = subprocess.getstatusoutput('pidof -x sendscreen')
+        if code == 0:
+            width, height = 800, 600
+        code, output = subprocess.getstatusoutput('pidof -x record-desktop')
         if code == 0:
             width, height = 800, 600
         debug('get_screen_size -> w:%d h:%d', width, height)
