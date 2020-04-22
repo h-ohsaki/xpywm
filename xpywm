@@ -27,6 +27,7 @@ import sys
 import time
 
 from Xlib import X, display, XK
+from Xlib.error import XError
 
 FRAME_WIDTH = 2
 FRAME_COLOR = 'aquamarine1'
@@ -349,16 +350,27 @@ class WindowManager():
         return '0x{:x} [{}]'.format(window.id, self.get_window_class(window))
 
     def get_screen_size(self):
-        """Return the dimension (WIDTH, HEIGHT) of the current screen as a
-        tuple in pixels.  If xrandr command exsits and either DP (DisplayPort)
-        or HDMI output is active, return its dimensionn instead of the screen
-        size of the current X11 display."""
-        width, height = self.screen.width_in_pixels, self.screen.height_in_pixels
-        output = subprocess.getoutput('xrandr --current')
-        # pick the last line including DP- or HDMI-
-        m = re.search(r'(Virtual-?\d|DP-?\d|HDMI-?\d) connected (?:primary )?(\d+)x(\d+)', output)
-        if m:
-            width, height = int(m.group(2)), int(m.group(3))
+        resources = self.screen.root.xrandr_get_screen_resources()
+
+        def is_connected(outputid):
+            outinfo = self.display.xrandr_get_output_info(
+                outputid, resources.timestamp)._data
+            # connection: 1->connected, connection: 0-> unconnected
+            return not (outinfo['connection'])
+
+        width, height = None, None
+        for crtcid in reversed(resources._data['crtcs']):
+            # reverse to sort as subs -> primary...
+            try:
+                crtcinfo = self.display.xrandr_get_crtc_info(
+                    crtcid, resources.timestamp)._data
+                output = crtcinfo['outputs'][0]
+            except (XError, IndexError):
+                # Xlib.error.XError -> output is not displayed...maybe
+                # IndexError -> there is no output
+                continue
+            if is_connected(output):
+                width, height = crtcinfo['width'], crtcinfo['height']
         # limit the screen size if sendscreen/record-desktop is running
         code, output = subprocess.getstatusoutput('pidof -x sendscreen')
         if code == 0:
