@@ -356,9 +356,9 @@ class WindowManager():
         width, height = self.screen.width_in_pixels, self.screen.height_in_pixels
         output = subprocess.getoutput('xrandr --current')
         # pick the last line including DP- or HDMI-
-        m = re.search(r'(DP-?\d|HDMI-?\d|Virtual-?\d) (primary )?connected (\d+)x(\d+)', output)
+        m = re.search(r'(DP-?\d|HDMI-?\d) connected (\d+)x(\d+)', output)
         if m:
-            width, height = int(m.group(3)), int(m.group(4))
+            width, height = int(m.group(2)), int(m.group(3))
         # limit the screen size if sendscreen/record-desktop is running
         code, output = subprocess.getstatusoutput('pidof -x sendscreen')
         if code == 0:
