@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# xpywm installation script for Debian GNU/Linux.
+
 sudo apt install -y xbase-clients rxvt-unicode xfonts-terminus net-tools redshift python3-pip
 sudo pip3 install xpywm xpymon xpylog
 
@@ -8,5 +10,3 @@ for i in .Xdefaults .emacs .xinitrc
 do
     wget -O $i http://www.lsnl.jp/~ohsaki/software/xpywm/skel$i
 done
-
-#sudo apt install build-essential linux-headers-4.19.0-9-amd64
