@@ -145,7 +145,7 @@ KEYBOARD_HANDLER['F12'] = {
 
   Destroy the current active window.
 
-- Ctrl + Mod1 + x
+- Ctrl + Mod1 + y
 
   Toggle the current active window between the first and the second virtual screens.
 
