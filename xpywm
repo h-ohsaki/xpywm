@@ -21,6 +21,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import math
 import re
 import subprocess
 import sys
@@ -133,39 +134,6 @@ LAYOUT_RULES = {
 # [x, y, width, height] of south-east, north-east, south-west, north-west windows
 QUARTER_GEOMETRIES = [[.5, .5, .5, .5], [.5, 0, .5, .5], [0, .5, .5, .5],
                       [0, 0, .5, .5]]
-
-TILE_COUNTS = {
-    1: [1, 1],
-    2: [2, 1],
-    3: [2, 2],
-    4: [2, 2],
-    5: [3, 2],
-    6: [3, 2],
-    7: [3, 3],
-    8: [3, 3],
-    9: [3, 3],
-    10: [4, 3],
-    11: [4, 3],
-    12: [4, 3],
-    13: [4, 4],
-    14: [4, 4],
-    15: [4, 4],
-    16: [4, 4],
-    17: [5, 4],
-    18: [5, 4],
-    19: [5, 4],
-    20: [5, 4],
-    21: [5, 5],
-    22: [5, 5],
-    23: [5, 5],
-    24: [5, 5],
-    25: [5, 5],
-    26: [6, 5],
-    27: [6, 5],
-    28: [6, 5],
-    29: [6, 5],
-    30: [6, 5],
-}
 
 def debug(fmt, *args):
     if args:
@@ -731,8 +699,16 @@ class WindowManager():
                 # NOTE: new windows have larger IDs?
                 return window.id
 
+        def _tile_size(n_windows):
+            n = int(math.sqrt(n_windows))
+            if n_windows <= n * n:
+                return n, n
+            if n_windows <= (n + 1) * n:
+                return n + 1, n
+            return n + 1, n + 1
+            
         windows = sorted(self.exposed_windows, key=_sort_key)
-        ncols, nrows = TILE_COUNTS[len(windows)]
+        ncols, nrows = _tile_size(len(windows))
         for col in reversed(range(ncols)):
             for row in reversed(range(nrows)):
                 if not windows:
