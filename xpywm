@@ -163,7 +163,7 @@ def xrandr_enable_external_output():
     """if an external display is connected via DP (DisplayPort) or HDMI,
     enable the output with the resolution of 800 x 600 pixels."""
     output = subprocess.getoutput('xrandr')
-    m = re.search(r'\n(DP-?\d|HDMI-?\d) connected', output, re.MULTILINE)
+    m = re.search(r'\n((DP|HDMI)(-?\d)+) connected', output, re.MULTILINE)
     if m:
         output = m.group(1)
         # NOTE: some LCD projectors fails to recognize without turning off
@@ -324,9 +324,9 @@ class WindowManager():
         width, height = self.screen.width_in_pixels, self.screen.height_in_pixels
         output = subprocess.getoutput('xrandr --current')
         # pick the last line including DP- or HDMI-
-        m = re.search(r'(DP-?\d|HDMI-?\d) connected (\d+)x(\d+)', output)
+        m = re.search(r'((DP|HDMI)(-?\d)+) connected (\d+)x(\d+)', output)
         if m:
-            width, height = int(m.group(2)), int(m.group(3))
+            width, height = int(m.group(4)), int(m.group(5))
         # limit the screen size if sendscreen/record-desktop is running
         code, output = subprocess.getstatusoutput('pidof -x sendscreen')
         if code == 0:
