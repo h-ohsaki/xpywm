@@ -167,8 +167,8 @@ def xrandr_enable_external_output():
     if m:
         output = m.group(1)
         # NOTE: some LCD projectors fails to recognize without turning off
-        os.system('xrandr --output {} --off'.format(output))
-        os.system('xrandr --output {} --mode 800x600'.format(output))
+        os.system(f'xrandr --output {output} --off')
+        os.system(f'xrandr --output {output} --mode 800x600')
         return
 
 def get_mixer_level():
@@ -187,7 +187,7 @@ def set_mixer_level(level):
     """Configure the master playback volume of the default ALSA audio device.
     Volume must be specified between 0 and 100."""
     debug('set_mixer_level: %d', level)
-    subprocess.getoutput('amixer set Master {}%'.format(level))
+    subprocess.getoutput(f'amixer set Master {level}%')
 
 def audio_raise_volume(delta=10):
     """Increase the volume of the default mixer by DELTA."""
@@ -207,7 +207,8 @@ def load_rcfile():
     (~/.xpywmrc) if it exists.  The RC script is any (valid) Python script,
     which is loaded after defining all global vaiables.  So, you can freely
     overrwite those definitions."""
-    rc_file = '{}/.xpywmrc'.format(os.getenv('HOME'))
+    home = os.getenv('HOME')
+    rc_file = f'{home}/.xpywmrc'
     try:
         with open(rc_file) as f:
             code = f.read()
@@ -314,7 +315,8 @@ class WindowManager():
             return None
 
     def window_shortname(self, window):
-        return '0x{:x} [{}]'.format(window.id, self.get_window_class(window))
+        cls_ = self.get_window_class(window)
+        return f'0x{window.id:x} [{cls_}]'
 
     def get_screen_size(self):
         """Return the dimension (WIDTH, HEIGHT) of the current screen as a
@@ -462,8 +464,8 @@ class WindowManager():
             if side == 'title':
                 # update title bar
                 win.clear_area(0, 0, TITLE_WIDTH, TITLE_HEIGHT)
-                name = '{:x}{}'.format(window.id,
-                                       self.get_window_class(window))
+                cls_ = self.get_window_class(window)
+                name = f'{window.id:x}{cls_}'
                 xpos = max(0, (TITLE_WIDTH - len(name) * 8) // 2)
                 chars = [chr(c).encode() for c in list(name.encode())]
                 win.poly_text(self.frame_gc, xpos, 8, chars)
@@ -706,7 +708,7 @@ class WindowManager():
             if n_windows <= (n + 1) * n:
                 return n + 1, n
             return n + 1, n + 1
-            
+
         windows = sorted(self.exposed_windows, key=_sort_key)
         ncols, nrows = _tile_size(len(windows))
         for col in reversed(range(ncols)):
