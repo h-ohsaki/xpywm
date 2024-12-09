@@ -15,7 +15,7 @@ xpywm
 
 This manual page documents **xpywm**, a simple but extensible X11 window manager
 written in Python.  **xpywm** is a Python version of **pwm**
-(http://www.lsnl.jp/~ohsaki/software/pwm/), an X11 window manager written in
+(http://lsnl.jp/~ohsaki/software/pwm/), an X11 window manager written in
 Perl.
 
 Development of **pwm** was motivated by perlwm (http://perlwm.sourceforge.net/),
