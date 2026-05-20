@@ -336,6 +336,9 @@ class WindowManager():
         code, output = subprocess.getstatusoutput('pidof -x record-desktop')
         if code == 0:
             width, height = 800, 600
+        code, output = subprocess.getstatusoutput('pidof -x record-comment')
+        if code == 0:
+            width, height = 1280, 1024
         debug('get_screen_size -> w:%d h:%d', width, height)
         return width, height
 

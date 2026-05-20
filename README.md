@@ -196,4 +196,4 @@ twm(1), perlwm(1), pwm(1), xpymon(1), xpylog(1)
 
 # AUTHOR
 
-Hiroyuki Ohsaki <ohsaki[atmark]lsnl.jp>
+Hiroyuki Ohsaki <code[atmark]lsnl.jp>

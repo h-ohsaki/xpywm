@@ -11,9 +11,9 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='xpywm',
-    version='1.16',
+    version='1.17',
     author='Hiroyuki Ohsaki',
-    author_email='ohsaki@lsnl.jp',
+    author_email='code@lsnl.jp',
     description='A simple but extensible X11 window manager written in Python',
     long_description=long_description,
     long_description_content_type='text/markdown',
